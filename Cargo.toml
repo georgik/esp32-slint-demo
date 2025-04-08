@@ -1,0 +1,39 @@
+[package]
+edition = "2021"
+name    = "s3"
+version = "0.1.0"
+
+[[bin]]
+name = "s3"
+path = "./src/bin/main.rs"
+
+[dependencies]
+critical-section = "1.2.0"
+esp-alloc        = { version = "0.7.0" }
+esp-hal          = { version = "1.0.0-beta.0", features = ["esp32s3", "unstable"] }
+esp-println = { version = "0.13.1", features = [ "log", "esp32s3" ] }
+#esp-backtrace = { version = "0.15.1", features = [
+#    "panic-handler",
+#    "println",
+#] }
+slint = { path = "../slint/api/rs/slint", default-features = false, features = [
+    "compat-1-2",
+] }
+mcu-board-support = { path = "../slint/examples/mcu-board-support", features = ["esp32-s3-box"] }
+
+[build-dependencies]
+slint-build = { path = "../slint/api/rs/build" }
+
+[profile.dev]
+# Rust debug is too slow.
+# For debug builds always builds with some optimization
+opt-level = "s"
+
+[profile.release]
+codegen-units    = 1     # LLVM can perform better optimizations using a single thread
+debug            = 2
+debug-assertions = false
+incremental      = false
+lto              = 'fat'
+opt-level        = 's'
+overflow-checks  = false
