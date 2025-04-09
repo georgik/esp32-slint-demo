@@ -19,7 +19,7 @@ esp-println = { version = "0.13.1", features = [ "log", "esp32s3" ] }
 slint = { path = "../slint/api/rs/slint", default-features = false, features = [
     "compat-1-2",
 ] }
-mcu-board-support = { path = "../slint/examples/mcu-board-support", features = ["esp32-s3-box"] }
+mcu-board-support = { path = "../slint/examples/mcu-board-support", features = ["esp32-s3-box-3"] }
 
 [build-dependencies]
 slint-build = { path = "../slint/api/rs/build" }

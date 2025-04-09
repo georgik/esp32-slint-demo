@@ -6,7 +6,6 @@ use esp_hal::main;
 use esp_hal::time::{Duration, Instant};
 use esp_println::println;
 use alloc::vec::Vec;
-
 // #[panic_handler]
 // fn panic(p: &core::panic::PanicInfo) -> ! {
 //     println!("Panic: {}", p);
