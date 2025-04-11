@@ -16,10 +16,14 @@ esp-println = { version = "0.13.1", features = [ "log", "esp32s3" ] }
 #    "panic-handler",
 #    "println",
 #] }
-slint = { path = "../slint/api/rs/slint", default-features = false, features = [
+#slint = { path = "../slint/api/rs/slint", default-features = false, features = [
+#    "compat-1-2",
+#] }
+slint = { git = "https://github.com/georgik/slint.git", branch = "feature/esp-hal-1.0.0" , default-features = false, features = [
     "compat-1-2",
 ] }
-mcu-board-support = { path = "../slint/examples/mcu-board-support", features = ["esp32-s3-box-3"] }
+
+mcu-board-support = { git = "https://github.com/georgik/slint.git", branch = "feature/esp-hal-1.0.0", features = ["esp32-s3-box-3"] }
 
 [build-dependencies]
 slint-build = { path = "../slint/api/rs/build" }
