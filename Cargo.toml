@@ -24,6 +24,7 @@ slint = { git = "https://github.com/georgik/slint.git", branch = "feature/esp-ha
 ] }
 
 mcu-board-support = { git = "https://github.com/georgik/slint.git", branch = "feature/esp-hal-1.0.0", features = ["esp32-s3-box-3"] }
+log = "0.4.27"
 
 [build-dependencies]
 slint-build = { path = "../slint/api/rs/build" }

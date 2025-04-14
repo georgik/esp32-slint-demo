@@ -1,16 +1,10 @@
 #![no_std]
 #![no_main]
 
-use esp_hal::clock::CpuClock;
+use alloc::vec::Vec;
 use esp_hal::main;
 use esp_hal::time::{Duration, Instant};
-use esp_println::println;
-use alloc::vec::Vec;
-// #[panic_handler]
-// fn panic(p: &core::panic::PanicInfo) -> ! {
-//     println!("Panic: {}", p);
-//     loop {}
-// }
+use log::info;
 
 extern crate alloc;
 
@@ -37,54 +31,67 @@ impl PrinterQueueData {
     }
 }
 
-
 #[main]
 fn main() -> ! {
-    println!("Hello, world!");
-
-
-    // let config = esp_hal::Config::default().with_cpu_clock(CpuClock::max());
-    // let peripherals = esp_hal::init(config);
-    // esp_alloc::psram_allocator!(peripherals.PSRAM, esp_hal::psram);
-    println!("PSRAM allocated.");
     mcu_board_support::init();
-    println!("MCU board initialized.");
+    info!("MCU board initialized.");
     let main_window = MainWindow::new().unwrap();
-    println!("MainWindow initialized.");
+    info!("MainWindow initialized.");
     main_window.set_ink_levels(
         [
-            InkLevel { color: slint::Color::from_rgb_u8(0, 255, 255), level: 0.40 },
-            InkLevel { color: slint::Color::from_rgb_u8(255, 0, 255), level: 0.20 },
-            InkLevel { color: slint::Color::from_rgb_u8(255, 255, 0), level: 0.50 },
-            InkLevel { color: slint::Color::from_rgb_u8(0, 0, 0), level: 0.80 },
+            InkLevel {
+                color: slint::Color::from_rgb_u8(0, 255, 255),
+                level: 0.40,
+            },
+            InkLevel {
+                color: slint::Color::from_rgb_u8(255, 0, 255),
+                level: 0.20,
+            },
+            InkLevel {
+                color: slint::Color::from_rgb_u8(255, 255, 0),
+                level: 0.50,
+            },
+            InkLevel {
+                color: slint::Color::from_rgb_u8(0, 0, 0),
+                level: 0.80,
+            },
         ]
         .into(),
     );
 
-    let default_queue: Vec<PrinterQueueItem> =
-        main_window.global::<PrinterQueue>().get_printer_queue().iter().collect();
+    let default_queue: Vec<PrinterQueueItem> = main_window
+        .global::<PrinterQueue>()
+        .get_printer_queue()
+        .iter()
+        .collect();
     let printer_queue = Rc::new(PrinterQueueData {
         data: Rc::new(slint::VecModel::from(default_queue.clone())),
         print_progress_timer: Default::default(),
     });
-    main_window.global::<PrinterQueue>().set_printer_queue(printer_queue.data.clone().into());
-    println!("PrinterQueue initialized.");
+    main_window
+        .global::<PrinterQueue>()
+        .set_printer_queue(printer_queue.data.clone().into());
+    info!("PrinterQueue initialized.");
     main_window.on_quit(move || {
         #[cfg(not(target_arch = "wasm32"))]
         slint::quit_event_loop().unwrap();
     });
 
     let printer_queue_copy = printer_queue.clone();
-    main_window.global::<PrinterQueue>().on_start_job(move |title| {
-        printer_queue_copy.push_job(title);
-    });
+    main_window
+        .global::<PrinterQueue>()
+        .on_start_job(move |title| {
+            printer_queue_copy.push_job(title);
+        });
 
     let printer_queue_copy = printer_queue.clone();
-    main_window.global::<PrinterQueue>().on_cancel_job(move |idx| {
-        printer_queue_copy.data.remove(idx as usize);
-    });
+    main_window
+        .global::<PrinterQueue>()
+        .on_cancel_job(move |idx| {
+            printer_queue_copy.data.remove(idx as usize);
+        });
 
-    println!("Printer Queue initialized.");
+    info!("Printer Queue initialized.");
     let printer_queue_weak = Rc::downgrade(&printer_queue);
     printer_queue.print_progress_timer.start(
         slint::TimerMode::Repeated,
@@ -111,11 +118,6 @@ fn main() -> ! {
     );
 
     main_window.run().unwrap();
-
-
-
-    // esp_alloc::heap_allocator!(size: 72 * 1024);
-
     loop {
         let delay_start = Instant::now();
         while delay_start.elapsed() < Duration::from_millis(500) {}

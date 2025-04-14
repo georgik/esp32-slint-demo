@@ -9,12 +9,10 @@ fn main() {
         .embed_resources(slint_build::EmbedResourcesKind::EmbedForSoftwareRenderer);
 
     // Compile your .slint UI file.
-    slint_build::compile_with_config("ui/printerdemo.slint", config)
-        .expect("Slint build failed");
+    slint_build::compile_with_config("ui/printerdemo.slint", config).expect("Slint build failed");
 
     // Print any additional rustc flags that Slint requires.
-    slint_build::print_rustc_flags()
-        .expect("Failed to print Slint rustc flags");
+    slint_build::print_rustc_flags().expect("Failed to print Slint rustc flags");
 }
 
 fn linker_be_nice() {
