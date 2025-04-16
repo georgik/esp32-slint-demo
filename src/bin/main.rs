@@ -172,7 +172,7 @@ fn main() -> ! {
         Rc::new(slint::VecModel::from(vec![(SharedString::from("1"),)]));
 
     let main_window = MainWindow::new().unwrap();
-    main_window.set_board_model(board_model.into());
+    // main_window.set_board_model(board_model.into());
     let mut level_data: Vec<LevelData> = main_window.get_level_model().iter().collect();
     // level_data.clear();
     // level_data.extend(

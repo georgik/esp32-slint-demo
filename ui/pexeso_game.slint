@@ -1,8 +1,24 @@
-import { Button } from "std-widgets.slint";
+import { Button, Button } from "std-widgets.slint";
+
+
+struct ResultSet {
+    key: string,
+    value: string
+}
+
+struct Card {
+    id: string,
+    values: [ResultSet]
+}
+
 
 struct LevelData  {
     level_name: string,
     locked: bool,
+    total_cards: int,
+    cards_per_row: int,
+    chain_length: int,
+    card_set: [Card],
 }
 
 // Internal Card component for use in the game board.
@@ -52,18 +68,21 @@ export component MainWindow inherits Window {
     in-out property<string> current_view: "level_selector";
     // Level model: each entry must include a level_name.
     in property<[LevelData]> level_model: [
-        { level_name: "1", locked: false },
-        { level_name: "2", locked: true },
-        { level_name: "3", locked: true },
-        { level_name: "4", locked: true },
-        { level_name: "5", locked: true }
+        { level_name: "1",
+            locked: false ,
+            cards_per_row: 2,
+            chain_length: 2,
+            card_set:  [
+                { id: "cherry", values: [ { key: "en-US", value: "cherry" } ] },
+                { id: "cheese", values: [ { key: "en-US", value: "cheese" } ] }
+            ]
+        }
     ];
-    // Board model: each entry represents a card and includes level_name (for header display).
-    in property<[ { card_id: string, face: string, state: string, level_name: string } ]> board_model;
-    // Callback for level selection.
-//    callback level_selected(int);
-    // Callback for card selection.
-//    callback card_selected(int);
+    in property <[Card]> selected_card_set : [
+        { id: "cherry", values: [ { key: "en-US", value: "cherry" } ] },
+        { id: "cheese", values: [ { key: "en-US", value: "cheese" } ] }
+    ];
+
 
     // LEVEL SELECTION PAGE:
     Rectangle {
@@ -122,19 +141,14 @@ export component MainWindow inherits Window {
                 }
             }
             // Container for the grid of cards.
-            Rectangle {
+            HorizontalLayout {
                 width: parent.width;
-                // Deduct an arbitrary header height (adjust as needed).
-                height: parent.height - 60px;
-                // For each card in the board_model, position cards in a 3-column grid.
-                for card[index] in board_model: Card {
-                    // Use Math.mod for modulo and Math.floor for division.
-                    x: Math.mod(index, 3) * (80px + 2px);
-                    y: Math.floor(index / 3) * (80px + 2px);
-                    card_id: card.card_id;
-                    face: card.face;
-                    state: card.state;
-//                    card_clicked => { card_selected(index); }
+                height: parent.height;
+
+                for card[index] in selected_card_set:Button {
+                    width: 40px;
+                    height: 40px;
+                    text: card.id;
                 }
             }
         }
