@@ -3,11 +3,12 @@ import { Button, Button } from "std-widgets.slint";
 
 struct ResultSet {
     key: string,
-    value: string
+    value: string,
 }
 
 struct Card {
     id: string,
+    image: image,
     values: [ResultSet]
 }
 
@@ -73,14 +74,31 @@ export component MainWindow inherits Window {
             cards_per_row: 2,
             chain_length: 2,
             card_set:  [
-                { id: "cherry", values: [ { key: "en-US", value: "cherry" } ] },
-                { id: "cheese", values: [ { key: "en-US", value: "cheese" } ] }
+                {
+                    id: "cherry",
+                    image: @image-url("images/cherry.svg"),
+                    values: [ { key: "en-US", value: "cherry" } ]
+                },
+                {
+                    id: "cheese",
+                    image: @image-url("images/cheese.svg"),
+                    values: [ { key: "en-US", value: "cheese" } ]
+                }
             ]
         }
     ];
     in property <[Card]> selected_card_set : [
-        { id: "cherry", values: [ { key: "en-US", value: "cherry" } ] },
-        { id: "cheese", values: [ { key: "en-US", value: "cheese" } ] }
+        {
+            id: "cherry",
+            image: @image-url("images/cherry.svg"),
+            values: [ { key: "en-US", value: "cherry" } ]
+        },
+
+        {
+            id: "cheese",
+            image: @image-url("images/cheese.svg"),
+            values: [ { key: "en-US", value: "cheese" } ]
+        }
     ];
 
 
@@ -145,10 +163,10 @@ export component MainWindow inherits Window {
                 width: parent.width;
                 height: parent.height;
 
-                for card[index] in selected_card_set:Button {
+                for card[index] in selected_card_set:Image {
                     width: 40px;
                     height: 40px;
-                    text: card.id;
+                    source: card.image;
                 }
             }
         }
