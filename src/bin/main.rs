@@ -51,7 +51,7 @@ struct GameState {
 impl GameState {
     // Generate a shuffled board.
     fn generate_board(&mut self) {
-        let faces = vec!["🍒", "🍎", "🍇", "🍋", "🍉", "🍍"];
+        let faces = vec!["A", "B", "C", "D", "E", "F"];
         let groups = self.current_level.total_cards / self.current_level.chain_length;
         let mut cards: Vec<GameCard> = Vec::new();
         for i in 0..groups {
@@ -166,38 +166,44 @@ fn main() -> ! {
 
     // Create the level model as a SharedVector-like model using VecModel;
     // here we wrap a tuple in a VecModel and then convert it to a ModelRc.
-    let level_model: Rc<dyn slint::Model<Data = (SharedString,)>> =
-        Rc::new(slint::VecModel::from(vec![(SharedString::from("1"),)]));
+    let level_model: Rc<dyn slint::Model<Data = (SharedString, )>> =
+        Rc::new(slint::VecModel::from(vec![
+            (SharedString::from("1"), ),
+            (SharedString::from("2"), ),
+            (SharedString::from("3"), ),
+            (SharedString::from("4"), ),
+            (SharedString::from("5"), ),
+        ]));
 
     let main_window = MainWindow::new().unwrap();
     main_window.set_board_model(board_model.into());
     main_window.set_level_model(level_model.into());
     main_window.set_current_view(SharedString::from("level_selector"));
 
-    let mw_weak = main_window.as_weak();
-    main_window.on_level_selected(move |_level_index| {
-        if let Some(mw) = mw_weak.upgrade() {
-            {
-                let mut gs = GAME_STATE.lock();
-                println!("Starting {}", gs.borrow().current_level.level_name);
-                gs.borrow_mut().generate_board();
-            }
-            update_board_model();
-            mw.set_current_view(SharedString::from("game_board"));
-        }
-    });
-
-
-    let mw_weak = main_window.as_weak();
-    main_window.on_card_selected(move |card_index| {
-        if let Some(mw) = mw_weak.upgrade() {
-            {
-                let mut gs = GAME_STATE.lock();
-                gs.borrow_mut().select_card(card_index as usize);
-            }
-            update_board_model();
-        }
-    });
+    // let mw_weak = main_window.as_weak();
+    // main_window.on_level_selected(move |_level_index| {
+    //     if let Some(mw) = mw_weak.upgrade() {
+    //         {
+    //             let mut gs = GAME_STATE.lock();
+    //             println!("Starting {}", gs.borrow().current_level.level_name);
+    //             gs.borrow_mut().generate_board();
+    //         }
+    //         update_board_model();
+    //         mw.set_current_view(SharedString::from("game_board"));
+    //     }
+    // });
+    //
+    //
+    // let mw_weak = main_window.as_weak();
+    // main_window.on_card_selected(move |card_index| {
+    //     if let Some(mw) = mw_weak.upgrade() {
+    //         {
+    //             let mut gs = GAME_STATE.lock();
+    //             gs.borrow_mut().select_card(card_index as usize);
+    //         }
+    //         update_board_model();
+    //     }
+    // });
 
 
     // Run the UI.
