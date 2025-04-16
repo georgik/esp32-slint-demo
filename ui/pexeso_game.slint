@@ -22,6 +22,10 @@ struct LevelData  {
     card_set: [Card],
 }
 
+struct Board {
+    cards: [Card],
+}
+
 // Internal Card component for use in the game board.
 component Card {
     // Input properties: card identifier, displayed face, and state.
@@ -67,37 +71,66 @@ export component MainWindow inherits Window {
     height: 240px;
     // Make current_view modifiable from within the UI.
     in-out property<string> current_view: "level_selector";
+
+    in property <[Card]> card_set: [
+       {
+           id: "cherry",
+           image: @image-url("images/cherry.png"),
+           values: [ { key: "en-US", value: "cherry" } ]
+       },
+       {
+           id: "cheese",
+           image: @image-url("images/cheese.png"),
+           values: [ { key: "en-US", value: "cheese" } ]
+       },
+       {
+            id: "carrot",
+            image: @image-url("images/carrot.png"),
+            values: [ { key: "en-US", value: "carrot" } ]
+       },
+        {
+            id: "rose",
+            image: @image-url("images/rose.png"),
+            values: [ { key: "en-US", value: "rose" } ]
+        },
+        {
+            id: "barrel",
+            image: @image-url("images/barrel.png"),
+            values: [ { key: "en-US", value: "barrel" } ]
+        },
+        {
+            id: "ghost",
+            image: @image-url("images/ghost.png"),
+            values: [ { key: "en-US", value: "ghost" } ]
+        },
+        {
+            id: "sun",
+            image: @image-url("images/sun.png"),
+            values: [ { key: "en-US", value: "sun" } ]
+        },
+        {
+            id: "butterfly",
+            image: @image-url("images/butterfly.png"),
+            values: [ { key: "en-US", value: "butterfly" } ]
+        },
+        {
+            id: "cloud",
+            image: @image-url("images/cloud.png"),
+            values: [ { key: "en-US", value: "cloud" } ]
+        },
+        {
+          id: "dwarf",
+          image: @image-url("images/dwarf.png"),
+          values: [ { key: "en-US", value: "dwarf" } ]
+        }
+   ];
     // Level model: each entry must include a level_name.
     in property<[LevelData]> level_model: [
         { level_name: "1",
             locked: false ,
             cards_per_row: 2,
             chain_length: 2,
-            card_set:  [
-                {
-                    id: "cherry",
-                    image: @image-url("images/cherry.svg"),
-                    values: [ { key: "en-US", value: "cherry" } ]
-                },
-                {
-                    id: "cheese",
-                    image: @image-url("images/cheese.svg"),
-                    values: [ { key: "en-US", value: "cheese" } ]
-                }
-            ]
-        }
-    ];
-    in property <[Card]> selected_card_set : [
-        {
-            id: "cherry",
-            image: @image-url("images/cherry.svg"),
-            values: [ { key: "en-US", value: "cherry" } ]
-        },
-
-        {
-            id: "cheese",
-            image: @image-url("images/cheese.svg"),
-            values: [ { key: "en-US", value: "cheese" } ]
+            card_set: card_set
         }
     ];
 
@@ -163,7 +196,7 @@ export component MainWindow inherits Window {
                 width: parent.width;
                 height: parent.height;
 
-                for card[index] in selected_card_set:Image {
+                for card[index] in card_set:Image {
                     width: 40px;
                     height: 40px;
                     source: card.image;
