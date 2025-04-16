@@ -16,10 +16,23 @@ esp-println = { version = "0.13.1", features = [ "log", "esp32s3" ] }
 #    "panic-handler",
 #    "println",
 #] }
-slint = { path = "../slint/api/rs/slint", default-features = false, features = [
+#slint = { path = "../slint/api/rs/slint", default-features = false, features = [
+#    "compat-1-2",
+#] }
+#mcu-board-support = { path = "../slint/examples/mcu-board-support", features = ["esp32-s3-box-3"] }
+#slint = { git = "https://github.com/georgik/slint.git", branch = "feature/esp32-dma" , default-features = false, features = [
+#    "compat-1-2",
+#] }
+slint = { git = "https://github.com/slint-ui/slint.git", rev = "691039b" , default-features = false, features = [
     "compat-1-2",
 ] }
-mcu-board-support = { path = "../slint/examples/mcu-board-support", features = ["esp32-s3-box-3"] }
+
+
+mcu-board-support = { git = "https://github.com/slint-ui/slint.git", rev = "691039b", features = ["esp32-s3-box-3"] }
+log = "0.4.27"
+rand_chacha = { version = "0.9.0", default-features = false }
+rand_core = { version = "0.9.3", default-features = false }
+spin = "0.10.0"
 
 [build-dependencies]
 slint-build = { path = "../slint/api/rs/build" }

@@ -1,0 +1,139 @@
+import { Button } from "std-widgets.slint";
+
+// Internal Card component for use in the game board.
+component Card {
+    // Input properties: card identifier, displayed face, and state.
+    in property<string> card_id;
+    in property<string> face;
+    in property<string> state;
+    // Callback invoked when the card is clicked.
+    callback card_clicked();
+
+    Rectangle {
+        // Use a fixed card size.
+        width: 80px;
+        height: 80px;
+        border-radius: 4px;
+        border-width: 2px;
+        border-color: gray;
+        // Choose a background color based on state.
+        property <color> background_color: state == "hidden" ? #444444 : state == "selected" ? #88ccee : #88ff88;
+        background: background_color;
+
+        Text {
+            text: state == "hidden" ? "?" : face;
+            // Center text using layout-provided alignment.
+            horizontal-alignment: center;
+            vertical-alignment: center;
+            font-size: 20px;
+            color: white;
+            width: parent.width;
+            height: parent.height;
+        }
+
+        // TouchArea provides the interactive region.
+        TouchArea {
+            width: parent.width;
+            height: parent.height;
+            clicked => { card_clicked(); }
+        }
+    }
+}
+
+export component MainWindow inherits Window {
+    // Make current_view modifiable from within the UI.
+    in-out property<string> current_view: "level_selector";
+    // Level model: each entry must include a level_name.
+    in property<[ { level_name: string } ]> level_model;
+    // Board model: each entry represents a card and includes level_name (for header display).
+    in property<[ { card_id: string, face: string, state: string, level_name: string } ]> board_model;
+    // Callback for level selection.
+    callback level_selected(int);
+    // Callback for card selection.
+    callback card_selected(int);
+
+    // LEVEL SELECTION PAGE:
+    Rectangle {
+        visible: current_view == "level_selector";
+        background: #222222;
+        width: parent.width;
+        height: parent.height;
+        VerticalLayout {
+            spacing: 10px;
+            padding: 20px;
+            Text {
+                text: "Select Level";
+                font-size: 24px;
+                horizontal-alignment: center;
+                color: white;
+                width: parent.width;
+            }
+            // For each level in the level model.
+            for level[index] in level_model: Rectangle {
+                width: parent.width;
+                height: 40px;
+                background: slategray;
+                // Use a VerticalLayout to center the text.
+                VerticalLayout {
+                    Text {
+                        text: "Level " + level.level_name;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                        color: white;
+                        width: parent.width;
+                        height: parent.height;
+                    }
+                }
+                TouchArea {
+                    width: parent.width;
+                    height: parent.height;
+                    clicked => { level_selected(index); }
+                }
+            }
+        }
+    }
+
+    // GAME BOARD PAGE:
+    Rectangle {
+        visible: current_view != "level_selector";
+        background: #222222;
+        width: parent.width;
+        height: parent.height;
+        VerticalLayout {
+            spacing: 10px;
+            padding: 10px;
+            HorizontalLayout {
+                spacing: 10px;
+                Button {
+                    text: "< Back";
+                    clicked => { current_view = "level_selector"; }
+                }
+                Text {
+                    // Display the level from the first card.
+                    text: "Level: " + board_model[0].level_name;
+                    font-size: 20px;
+                    color: white;
+                    horizontal-alignment: center;
+                    // Use parent's width instead of self.width to avoid a binding loop.
+                    width: parent.width - 100px;
+                }
+            }
+            // Container for the grid of cards.
+            Rectangle {
+                width: parent.width;
+                // Deduct an arbitrary header height (adjust as needed).
+                height: parent.height - 60px;
+                // For each card in the board_model, position cards in a 3-column grid.
+                for card[index] in board_model: Card {
+                    // Use Math.mod for modulo and Math.floor for division.
+                    x: Math.mod(index, 3) * (80px + 2px);
+                    y: Math.floor(index / 3) * (80px + 2px);
+                    card_id: card.card_id;
+                    face: card.face;
+                    state: card.state;
+                    card_clicked => { card_selected(index); }
+                }
+            }
+        }
+    }
+}

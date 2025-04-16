@@ -9,7 +9,7 @@ fn main() {
         .embed_resources(slint_build::EmbedResourcesKind::EmbedForSoftwareRenderer);
 
     // Compile your .slint UI file.
-    slint_build::compile_with_config("ui/printerdemo.slint", config)
+    slint_build::compile_with_config("ui/pexeso_game.slint", config)
         .expect("Slint build failed");
 
     // Print any additional rustc flags that Slint requires.

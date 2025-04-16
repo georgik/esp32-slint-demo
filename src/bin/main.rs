@@ -1,125 +1,210 @@
 #![no_std]
 #![no_main]
 
+use alloc::rc::Rc;
+use alloc::string::String;
+use alloc::string::ToString;
+use alloc::vec;
+use alloc::vec::Vec;
+use core::panic::PanicInfo;
 use esp_hal::clock::CpuClock;
 use esp_hal::main;
-use esp_hal::time::{Duration, Instant};
+use esp_hal::time::{Duration as EspDuration, Instant};
 use esp_println::println;
-use alloc::vec::Vec;
-// #[panic_handler]
-// fn panic(p: &core::panic::PanicInfo) -> ! {
-//     println!("Panic: {}", p);
-//     loop {}
-// }
-
 extern crate alloc;
 
-slint::include_modules!();
+// Import traits for rand_chacha.
+use rand_chacha::ChaCha8Rng;
+use rand_core::{RngCore, SeedableRng};
 
-use alloc::rc::Rc;
-use slint::Model;
-struct PrinterQueueData {
-    data: Rc<slint::VecModel<PrinterQueueItem>>,
-    print_progress_timer: slint::Timer,
+use spin::Mutex;
+use core::cell::RefCell;
+use slint::SharedString;
+slint::include_modules!(); // This includes the compiled Slint UI file, which exports MainWindow.
+
+// ----------------------------------------------------------------------
+// Data Structures for the Game
+// ----------------------------------------------------------------------
+
+// Use &'static str for Level so that the constant initializer works.
+#[derive(Clone)]
+struct Level {
+    level_name: &'static str,
+    chain_length: usize, // e.g., 2 for pairs
+    total_cards: usize,  // must be divisible by chain_length
 }
 
-impl PrinterQueueData {
-    fn push_job(&self, title: slint::SharedString) {
-        self.data.push(PrinterQueueItem {
-            status: "waiting".into(),
-            progress: 0,
-            title,
-            owner: env!("CARGO_PKG_AUTHORS").into(),
-            pages: 1,
-            size: "100kB".into(),
-            submission_date: "".into(),
-        })
+#[derive(Clone)]
+struct GameCard {
+    card_id: String, // used to identify matching cards
+    face: String,    // visual representation (e.g., an emoji)
+    state: String,   // "hidden", "selected", or "solved"
+}
+
+// Global game state.
+struct GameState {
+    current_level: Level,
+    board: Vec<GameCard>,
+    selected_indices: Vec<usize>,
+}
+
+impl GameState {
+    // Generate a shuffled board.
+    fn generate_board(&mut self) {
+        let faces = vec!["🍒", "🍎", "🍇", "🍋", "🍉", "🍍"];
+        let groups = self.current_level.total_cards / self.current_level.chain_length;
+        let mut cards: Vec<GameCard> = Vec::new();
+        for i in 0..groups {
+            let face = faces[i % faces.len()].to_string();
+            for _ in 0..self.current_level.chain_length {
+                cards.push(GameCard {
+                    card_id: face.clone(),
+                    face: face.clone(),
+                    state: "hidden".into(),
+                });
+            }
+        }
+        // Shuffle cards using a Fisher–Yates algorithm with rand_chacha.
+        let len = cards.len();
+        let mut rng = ChaCha8Rng::from_seed([0u8; 32]);
+        for i in 0..len {
+            let j = i + (rng.next_u32() as usize % (len - i));
+            cards.swap(i, j);
+        }
+        self.board = cards;
+    }
+
+    // Process a card selection.
+    fn select_card(&mut self, index: usize) {
+        if self.board[index].state != "hidden" {
+            return;
+        }
+        self.board[index].state = "selected".into();
+        self.selected_indices.push(index);
+        if self.selected_indices.len() == self.current_level.chain_length {
+            let first_id = &self.board[self.selected_indices[0]].card_id;
+            let all_match = self
+                .selected_indices
+                .iter()
+                .all(|&i| &self.board[i].card_id == first_id);
+            if all_match {
+                for &i in &self.selected_indices {
+                    self.board[i].state = "solved".into();
+                }
+            } else {
+                let selected = self.selected_indices.clone();
+                // Schedule a flip-back after 1000ms using slint::Timer::single_shot.
+                slint::Timer::single_shot(core::time::Duration::from_millis(1000), move || {
+                    GAME_STATE.lock().borrow_mut().board.iter_mut().enumerate().for_each(|(i, card)| {
+                        if selected.contains(&i) {
+                            card.state = "hidden".into();
+                        }
+                    });
+                    update_board_model();
+                });
+            }
+            self.selected_indices.clear();
+            update_board_model();
+        }
     }
 }
 
+// ----------------------------------------------------------------------
+// Global Game State Setup
+// ----------------------------------------------------------------------
+// Use a spin::Mutex (since we're in a no_std, single-threaded environment).
+static GAME_STATE: Mutex<RefCell<GameState>> = Mutex::new(RefCell::new(GameState {
+    current_level: Level {
+        level_name: "Level 1",
+        chain_length: 2,
+        total_cards: 6, // 3 pairs
+    },
+    board: Vec::new(),
+    selected_indices: Vec::new(),
+}));
+
+// The board model exposed to Slint.
+// The UI expects each board entry to be a tuple:
+// (SharedString, SharedString, SharedString, SharedString)
+// corresponding to (card_id, face, state, level_name).
+static mut BOARD_MODEL: Option<Rc<slint::VecModel<(SharedString, SharedString, SharedString, SharedString)>>> = None;
+
+// Update the board model from the global game state.
+fn update_board_model() {
+    unsafe {
+        if let Some(board_model) = &BOARD_MODEL {
+            let mut new_vec: Vec<(SharedString, SharedString, SharedString, SharedString)> = Vec::new();
+            let gs = GAME_STATE.lock();
+            let state = gs.borrow();
+            for card in state.board.iter() {
+                new_vec.push((
+                    SharedString::from(card.card_id.clone()),
+                    SharedString::from(card.face.clone()),
+                    SharedString::from(card.state.clone()),
+                    SharedString::from(state.current_level.level_name),
+                ));
+            }
+            board_model.set_vec(new_vec);
+        }
+    }
+}
 
 #[main]
 fn main() -> ! {
-    println!("Hello, world!");
-
-
-    // let config = esp_hal::Config::default().with_cpu_clock(CpuClock::max());
-    // let peripherals = esp_hal::init(config);
-    // esp_alloc::psram_allocator!(peripherals.PSRAM, esp_hal::psram);
-    println!("PSRAM allocated.");
+    println!("Starting Pexeso Game");
     mcu_board_support::init();
-    println!("MCU board initialized.");
+
+    {
+        let mut gs = GAME_STATE.lock();
+        gs.borrow_mut().generate_board();
+    }
+
+    let board_model = unsafe {
+        BOARD_MODEL = Some(Rc::new(slint::VecModel::default()));
+        BOARD_MODEL.as_ref().unwrap().clone()
+    };
+
+    // Create the level model as a SharedVector-like model using VecModel;
+    // here we wrap a tuple in a VecModel and then convert it to a ModelRc.
+    let level_model: Rc<dyn slint::Model<Data = (SharedString,)>> =
+        Rc::new(slint::VecModel::from(vec![(SharedString::from("1"),)]));
+
     let main_window = MainWindow::new().unwrap();
-    println!("MainWindow initialized.");
-    main_window.set_ink_levels(
-        [
-            InkLevel { color: slint::Color::from_rgb_u8(0, 255, 255), level: 0.40 },
-            InkLevel { color: slint::Color::from_rgb_u8(255, 0, 255), level: 0.20 },
-            InkLevel { color: slint::Color::from_rgb_u8(255, 255, 0), level: 0.50 },
-            InkLevel { color: slint::Color::from_rgb_u8(0, 0, 0), level: 0.80 },
-        ]
-        .into(),
-    );
+    main_window.set_board_model(board_model.into());
+    main_window.set_level_model(level_model.into());
+    main_window.set_current_view(SharedString::from("level_selector"));
 
-    let default_queue: Vec<PrinterQueueItem> =
-        main_window.global::<PrinterQueue>().get_printer_queue().iter().collect();
-    let printer_queue = Rc::new(PrinterQueueData {
-        data: Rc::new(slint::VecModel::from(default_queue.clone())),
-        print_progress_timer: Default::default(),
-    });
-    main_window.global::<PrinterQueue>().set_printer_queue(printer_queue.data.clone().into());
-    println!("PrinterQueue initialized.");
-    main_window.on_quit(move || {
-        #[cfg(not(target_arch = "wasm32"))]
-        slint::quit_event_loop().unwrap();
-    });
-
-    let printer_queue_copy = printer_queue.clone();
-    main_window.global::<PrinterQueue>().on_start_job(move |title| {
-        printer_queue_copy.push_job(title);
-    });
-
-    let printer_queue_copy = printer_queue.clone();
-    main_window.global::<PrinterQueue>().on_cancel_job(move |idx| {
-        printer_queue_copy.data.remove(idx as usize);
-    });
-
-    println!("Printer Queue initialized.");
-    let printer_queue_weak = Rc::downgrade(&printer_queue);
-    printer_queue.print_progress_timer.start(
-        slint::TimerMode::Repeated,
-        core::time::Duration::from_secs(1),
-        move || {
-            if let Some(printer_queue) = printer_queue_weak.upgrade() {
-                if printer_queue.data.row_count() > 0 {
-                    let mut top_item = printer_queue.data.row_data(0).unwrap();
-                    top_item.progress += 1;
-                    top_item.status = "printing".into();
-                    if top_item.progress > 100 {
-                        printer_queue.data.remove(0);
-                        if printer_queue.data.row_count() == 0 {
-                            return;
-                        }
-                        top_item = printer_queue.data.row_data(0).unwrap();
-                    }
-                    printer_queue.data.set_row_data(0, top_item);
-                } else {
-                    printer_queue.data.set_vec(default_queue.clone());
-                }
+    let mw_weak = main_window.as_weak();
+    main_window.on_level_selected(move |_level_index| {
+        if let Some(mw) = mw_weak.upgrade() {
+            {
+                let mut gs = GAME_STATE.lock();
+                println!("Starting {}", gs.borrow().current_level.level_name);
+                gs.borrow_mut().generate_board();
             }
-        },
-    );
+            update_board_model();
+            mw.set_current_view(SharedString::from("game_board"));
+        }
+    });
 
+
+    let mw_weak = main_window.as_weak();
+    main_window.on_card_selected(move |card_index| {
+        if let Some(mw) = mw_weak.upgrade() {
+            {
+                let mut gs = GAME_STATE.lock();
+                gs.borrow_mut().select_card(card_index as usize);
+            }
+            update_board_model();
+        }
+    });
+
+
+    // Run the UI.
     main_window.run().unwrap();
-
-
-
-    // esp_alloc::heap_allocator!(size: 72 * 1024);
 
     loop {
         let delay_start = Instant::now();
-        while delay_start.elapsed() < Duration::from_millis(500) {}
+        while delay_start.elapsed() < EspDuration::from_millis(500) {}
     }
-
-    // for inspiration have a look at the examples at https://github.com/esp-rs/esp-hal/tree/esp-hal-v1.0.0-beta.0/examples/src/bin
 }
