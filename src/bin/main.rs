@@ -16,12 +16,14 @@ extern crate alloc;
 // Import traits for rand_chacha.
 use rand_chacha::ChaCha8Rng;
 use rand_core::{RngCore, SeedableRng};
-
+use slint::{Model, VecModel};
 use spin::Mutex;
 use core::cell::RefCell;
 use slint::SharedString;
 slint::include_modules!(); // This includes the compiled Slint UI file, which exports MainWindow.
-
+// slint::slint! {
+//     export { MainWindow } from "ui/pexeso_game.slint";
+// }
 // ----------------------------------------------------------------------
 // Data Structures for the Game
 // ----------------------------------------------------------------------
@@ -166,18 +168,36 @@ fn main() -> ! {
 
     // Create the level model as a SharedVector-like model using VecModel;
     // here we wrap a tuple in a VecModel and then convert it to a ModelRc.
-    let level_model: Rc<dyn slint::Model<Data = (SharedString, )>> =
-        Rc::new(slint::VecModel::from(vec![
-            (SharedString::from("1"), ),
-            (SharedString::from("2"), ),
-            (SharedString::from("3"), ),
-            (SharedString::from("4"), ),
-            (SharedString::from("5"), ),
-        ]));
+    let level_model: Rc<dyn slint::Model<Data = (SharedString,)>> =
+        Rc::new(slint::VecModel::from(vec![(SharedString::from("1"),)]));
 
     let main_window = MainWindow::new().unwrap();
     main_window.set_board_model(board_model.into());
-    main_window.set_level_model(level_model.into());
+    let mut level_data: Vec<LevelData> = main_window.get_level_model().iter().collect();
+    // level_data.clear();
+    // level_data.extend(
+    //     vec![
+    //         LevelData {
+    //             level_name: SharedString::from("1"),
+    //             locked: false
+    //         },
+    //         LevelData {
+    //             level_name: SharedString::from("2"),
+    //             locked: true
+    //         },
+    //         LevelData {
+    //             level_name: SharedString::from("3"),
+    //             locked: true
+    //         },
+    //     ],
+    // );
+
+
+    // let level_model = Rc::new(VecModel::from(level_data));
+    //
+    // main_window.set_level_model(level_model.clone().into());
+
+    // main_window.set_level_model(level_model.into());
     main_window.set_current_view(SharedString::from("level_selector"));
 
     // let mw_weak = main_window.as_weak();
