@@ -168,37 +168,6 @@ export component MainWindow inherits Window {
     };
 
 
-    // LEVEL SELECTION PAGE:
-    Rectangle {
-        visible: current_view == "level_selector";
-        background: rgb(255, 255, 224);
-        width: parent.width;
-        height: parent.height;
-        VerticalLayout {
-            spacing: 10px;
-            padding: 20px;
-            Text {
-                text: "Select Level";
-                font-size: 16px;
-                horizontal-alignment: center;
-                color: black;
-                width: parent.width;
-            }
-            // For each level in the level model.
-            HorizontalLayout {
-                width: parent.width;
-                height: parent.height;
-
-                for level[index] in level_model:Button {
-                    width: 40px;
-                    height: 40px;
-                    text: level.level_name;
-                    clicked => { current_view = "game_play"; }
-                }
-            }
-        }
-    }
-
     // GAME BOARD PAGE:
     Rectangle {
         visible: current_view == "game_play";
@@ -241,7 +210,7 @@ export component MainWindow inherits Window {
                         // Back face (question mark)
                         Image {
                             x: (parent.width - self.width) / 2;
-                            width: card.is_face_up ? 1px : parent.width;
+                            width: card.is_face_up ? 0px : parent.width;
                             height: parent.height;
                             source: @image-url("images/question.png");
                             visible: self.width > 0;
@@ -255,7 +224,7 @@ export component MainWindow inherits Window {
                         // Front face (card image)
                         Image {
                             x: (parent.width - self.width) / 2;
-                            width: card.is_face_up ? parent.width : 1px;
+                            width: card.is_face_up ? parent.width : 0px;
                             height: parent.height;
                             source: card.image;
                             visible: self.width > 0;
@@ -272,9 +241,7 @@ export component MainWindow inherits Window {
                         width: parent.width;
                         height: parent.height;
                         clicked => {
-                            if (!card.is_face_up) {
-                                card.is_face_up = true;
-                            }
+                            card.is_face_up = !card.is_face_up;
                         }
                     }
                 }

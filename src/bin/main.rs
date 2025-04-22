@@ -166,65 +166,13 @@ fn main() -> ! {
         BOARD_MODEL.as_ref().unwrap().clone()
     };
 
-    // Create the level model as a SharedVector-like model using VecModel;
-    // here we wrap a tuple in a VecModel and then convert it to a ModelRc.
     let level_model: Rc<dyn slint::Model<Data = (SharedString,)>> =
         Rc::new(slint::VecModel::from(vec![(SharedString::from("1"),)]));
 
     let main_window = MainWindow::new().unwrap();
-    // main_window.set_board_model(board_model.into());
     let mut level_data: Vec<LevelData> = main_window.get_level_model().iter().collect();
-    // level_data.clear();
-    // level_data.extend(
-    //     vec![
-    //         LevelData {
-    //             level_name: SharedString::from("1"),
-    //             locked: false
-    //         },
-    //         LevelData {
-    //             level_name: SharedString::from("2"),
-    //             locked: true
-    //         },
-    //         LevelData {
-    //             level_name: SharedString::from("3"),
-    //             locked: true
-    //         },
-    //     ],
-    // );
-
-
-    // let level_model = Rc::new(VecModel::from(level_data));
-    //
-    // main_window.set_level_model(level_model.clone().into());
-
-    // main_window.set_level_model(level_model.into());
-    main_window.set_current_view(SharedString::from("level_selector"));
-
-    // let mw_weak = main_window.as_weak();
-    // main_window.on_level_selected(move |_level_index| {
-    //     if let Some(mw) = mw_weak.upgrade() {
-    //         {
-    //             let mut gs = GAME_STATE.lock();
-    //             println!("Starting {}", gs.borrow().current_level.level_name);
-    //             gs.borrow_mut().generate_board();
-    //         }
-    //         update_board_model();
-    //         mw.set_current_view(SharedString::from("game_board"));
-    //     }
-    // });
-    //
-    //
-    // let mw_weak = main_window.as_weak();
-    // main_window.on_card_selected(move |card_index| {
-    //     if let Some(mw) = mw_weak.upgrade() {
-    //         {
-    //             let mut gs = GAME_STATE.lock();
-    //             gs.borrow_mut().select_card(card_index as usize);
-    //         }
-    //         update_board_model();
-    //     }
-    // });
-
+    // main_window.set_current_view(SharedString::from("level_selector"));
+    main_window.set_current_view(SharedString::from("game_play"));
 
     // Run the UI.
     main_window.run().unwrap();
