@@ -6,9 +6,11 @@ struct ResultSet {
     value: string,
 }
 
+// Representation of physical card on the game board.
 struct Card {
     id: string,
     image: image,
+    is_face_up: bool,
     values: [ResultSet]
 }
 
@@ -134,6 +136,37 @@ export component MainWindow inherits Window {
         }
     ];
 
+    // Board model: Randomly generated list of cards from card_set
+    in property<Board> board_model: {
+        cards: [
+            {
+              id: "cherry",
+              image: @image-url("images/cherry.png"),
+              is_face_up: false,
+              values: [ { key: "en-US", value: "cherry" } ]
+            },
+            {
+                id: "cherry",
+                image: @image-url("images/cherry.png"),
+                is_face_up: true,
+                values: [ { key: "en-US", value: "cherry" } ]
+            },
+            {
+                id: "dwarf",
+                image: @image-url("images/dwarf.png"),
+                is_face_up: false,
+                values: [ { key: "en-US", value: "dwarf" } ]
+            },
+            {
+                id: "dwarf",
+                image: @image-url("images/dwarf.png"),
+                is_face_up: true,
+                values: [ { key: "en-US", value: "dwarf" } ]
+            },
+
+          ]
+    };
+
 
     // LEVEL SELECTION PAGE:
     Rectangle {
@@ -196,11 +229,56 @@ export component MainWindow inherits Window {
                 width: parent.width;
                 height: parent.height;
 
-                for card[index] in card_set:Image {
+                for card[index] in board_model.cards: Rectangle {
                     width: 40px;
                     height: 40px;
-                    source: card.image;
+
+                    // Card container
+                    Rectangle {
+                        width: parent.width;
+                        height: parent.height;
+
+                        // Back face (question mark)
+                        Image {
+                            x: (parent.width - self.width) / 2;
+                            width: card.is_face_up ? 0px : parent.width;
+                            height: parent.height;
+                            source: @image-url("images/question.png");
+                            visible: self.width > 0;
+
+                            animate width {
+                                duration: 300ms;
+                                easing: ease-in-out;
+                            }
+                        }
+
+                        // Front face (card image)
+                        Image {
+                            x: (parent.width - self.width) / 2;
+                            width: card.is_face_up ? parent.width : 0px;
+                            height: parent.height;
+                            source: card.image;
+                            visible: self.width > 0;
+
+                            animate width {
+                                duration: 300ms;
+                                easing: ease-in-out;
+                                delay: 300ms;  // Start after back face animation completes
+                            }
+                        }
+                    }
+
+                    TouchArea {
+                        width: parent.width;
+                        height: parent.height;
+                        clicked => {
+                            if (!card.is_face_up) {
+                                card.is_face_up = true;
+                            }
+                        }
+                    }
                 }
+
             }
         }
     }
