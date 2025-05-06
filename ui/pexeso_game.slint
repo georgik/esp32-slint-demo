@@ -38,42 +38,6 @@ export component MainWindow inherits Window {
 
     callback flip_card(index: int);
 
-    // Track which cards are face up
-    in-out property<[bool]> face_up_flags: [false, false, false, false];
-    // Indices of the two flipped cards (-1 = none)
-    in-out property<int> first_index: -1;
-    in-out property<int> second_index: -1;
-    // Timer to flip back non-matching cards
-    flip_back_timer := Timer {
-        interval: 800ms;
-        running: false;
-        triggered() => {
-            face_up_flags[first_index] = false;
-            face_up_flags[second_index] = false;
-            first_index = -1;
-            second_index = -1;
-            self.running = false;
-        }
-    }
-
-    flip_card(index) => {
-        // Ignore taps on already face-up cards
-        if (face_up_flags[index]) { return; }
-        if (first_index < 0) {
-            face_up_flags[index] = true;
-            first_index = index;
-        } else if (second_index < 0) {
-            face_up_flags[index] = true;
-            second_index = index;
-            if (board_model.cards[first_index].id == board_model.cards[second_index].id) {
-                first_index = -1;
-                second_index = -1;
-            } else {
-                flip_back_timer.running = true;
-            }
-        }
-    }
-
     in property <[Card]> card_set: [
        {
            id: "cherry",
@@ -248,14 +212,14 @@ export component MainWindow inherits Window {
 
             // Back face (question mark)
             Image {
-                width: face_up_flags[card_index] ? 0px : parent.width;
+                width: card.is_face_up ? 0px : parent.width;
                 height: parent.height;
                 source: @image-url("images/question.png");
                 animate width { duration: 300ms; easing: ease-in-out; }
             }
             // Front face (card image)
             Image {
-                width: face_up_flags[card_index] ? parent.width : 0px;
+                width: card.is_face_up ? parent.width : 0px;
                 height: parent.height;
                 source: card.image;
                 animate width {
