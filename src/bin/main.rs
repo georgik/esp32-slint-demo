@@ -58,42 +58,38 @@ struct GameState {
 }
 
 impl GameState {
-    // Generate a shuffled board.
     fn generate_board(&mut self) {
-        // Available images for cards
-        let mut available = vec![
+        // 1) Build the list of available card identifiers
+        let mut available: Vec<&str> = vec![
             "cherry", "cheese", "carrot", "rose",
             "barrel", "ghost", "sun", "butterfly",
             "cloud", "dwarf",
         ];
-        // Use ChaCha8Rng for reproducible randomness
+        // 2) Prepare RNG
         let mut rng = ChaCha8Rng::from_seed([0u8; 32]);
-        // Shuffle available images
-        let avail_len = available.len();
-        for i in 0..avail_len {
-            let j = i + (rng.next_u32() as usize % (avail_len - i));
-            available.swap(i, j);
+        // 3) Compute how many distinct pairs we need
+        let total = self.current_level.total_cards;
+        let pair_count = total / self.current_level.chain_length;
+        // 4) Prepare a list of free slot indices
+        let mut free_slots: Vec<usize> = (0..total).collect();
+        // 5) Clear and size the board vector
+        self.board.clear();
+        self.board.resize_with(total, || GameCard { card_id: String::new(), face: String::new(), state: "hidden".into() });
+        // 6) For each pair, pick a card type and two slots
+        for _ in 0..pair_count {
+            // a) Pick and remove a random card type
+            let type_idx = (rng.next_u32() as usize) % available.len();
+            let id = available.remove(type_idx).to_string();
+            let card = GameCard { card_id: id.clone(), face: id.clone(), state: "hidden".into() };
+            // b) Pick first slot
+            let slot_idx = (rng.next_u32() as usize) % free_slots.len();
+            let pos1 = free_slots.remove(slot_idx);
+            self.board[pos1] = card.clone();
+            // c) Pick second slot
+            let slot_idx = (rng.next_u32() as usize) % free_slots.len();
+            let pos2 = free_slots.remove(slot_idx);
+            self.board[pos2] = card;
         }
-        // Build exactly two pairs
-        let pair_count = self.current_level.total_cards / self.current_level.chain_length;
-        let mut cards: Vec<GameCard> = Vec::new();
-        for face_str in available.iter().take(pair_count) {
-            let face = face_str.to_string();
-            for _ in 0..self.current_level.chain_length {
-                cards.push(GameCard {
-                    card_id: face.clone(),
-                    face: face.clone(),
-                    state: "hidden".into(),
-                });
-            }
-        }
-        // Shuffle the final 4 cards
-        let len = cards.len();
-        for i in 0..len {
-            let j = i + (rng.next_u32() as usize % (len - i));
-            cards.swap(i, j);
-        }
-        self.board = cards;
     }
 
     // Process a card selection. Returns true if a flip occurred, false otherwise.
@@ -161,7 +157,11 @@ fn update_board_model() {
                     // Map the GameCard into the Slint-generated Card
                     new_vec.push(Card {
                         id: SharedString::from(card.card_id.clone()),
-                        image: default_cards[i % default_cards.len()].image.clone(),
+                        image: default_cards
+                            .iter()
+                            .find(|c2| c2.id.as_str() == card.card_id)
+                            .map(|c2| c2.image.clone())
+                            .unwrap_or_else(|| default_cards[0].image.clone()),
                         is_face_up: card.state != "hidden",
                         values: Rc::new(VecModel::default()).into(),
                         x,
