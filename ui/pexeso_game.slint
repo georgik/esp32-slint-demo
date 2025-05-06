@@ -11,7 +11,9 @@ struct Card {
     id: string,
     image: image,
     is_face_up: bool,
-    values: [ResultSet]
+    values: [ResultSet],
+    x: int,
+    y: int,
 }
 
 
@@ -28,51 +30,13 @@ struct Board {
     cards: [Card],
 }
 
-// Internal Card component for use in the game board.
-component Card {
-    // Input properties: card identifier, displayed face, and state.
-    in property<string> card_id;
-    in property<string> face;
-    in property<string> state;
-    // Callback invoked when the card is clicked.
-    callback card_clicked();
-
-    Rectangle {
-        // Use a fixed card size.
-        width: 80px;
-        height: 80px;
-        border-radius: 4px;
-        border-width: 2px;
-        border-color: gray;
-        // Choose a background color based on state.
-        property <color> background_color: state == "hidden" ? #444444 : state == "selected" ? #88ccee : #88ff88;
-        background: background_color;
-
-        Text {
-            text: state == "hidden" ? "?" : face;
-            // Center text using layout-provided alignment.
-            horizontal-alignment: center;
-            vertical-alignment: center;
-            font-size: 20px;
-            color: white;
-            width: parent.width;
-            height: parent.height;
-        }
-
-        // TouchArea provides the interactive region.
-        TouchArea {
-            width: parent.width;
-            height: parent.height;
-            clicked => { card_clicked(); }
-        }
-    }
-}
-
 export component MainWindow inherits Window {
-    width: 320px;
-    height: 240px;
+    preferred-width: 480px;
+    preferred-height: 480px;
     // Make current_view modifiable from within the UI.
     in-out property<string> current_view: "level_selector";
+
+    callback flip_card(index: int);
 
     in property <[Card]> card_set: [
        {
@@ -143,25 +107,33 @@ export component MainWindow inherits Window {
               id: "cherry",
               image: @image-url("images/cherry.png"),
               is_face_up: false,
-              values: [ { key: "en-US", value: "cherry" } ]
+              values: [ { key: "en-US", value: "cherry" } ],
+              x: 0,
+              y: 80
             },
             {
-                id: "cherry",
-                image: @image-url("images/cherry.png"),
-                is_face_up: true,
-                values: [ { key: "en-US", value: "cherry" } ]
+                id: "cheese",
+                image: @image-url("images/cheese.png"),
+                is_face_up: false,
+                values: [ { key: "en-US", value: "cheese" } ],
+                x: 240,
+                y: 80
             },
             {
                 id: "dwarf",
                 image: @image-url("images/dwarf.png"),
                 is_face_up: false,
-                values: [ { key: "en-US", value: "dwarf" } ]
+                values: [ { key: "en-US", value: "dwarf" } ],
+                x: 0,
+                y: 300
             },
             {
                 id: "dwarf",
                 image: @image-url("images/dwarf.png"),
-                is_face_up: true,
-                values: [ { key: "en-US", value: "dwarf" } ]
+                is_face_up: false,
+                values: [ { key: "en-US", value: "dwarf" } ],
+                x: 240,
+                y: 300
             },
 
           ]
@@ -208,8 +180,11 @@ export component MainWindow inherits Window {
         VerticalLayout {
             spacing: 10px;
             padding: 10px;
+            height: parent.height;
             HorizontalLayout {
                 spacing: 10px;
+                // top bar unchanged
+                height: 60px;
                 Button {
                     text: "< Back";
                     clicked => { current_view = "level_selector"; }
@@ -224,61 +199,39 @@ export component MainWindow inherits Window {
                     width: parent.width - 100px;
                 }
             }
-            // Container for the grid of cards.
-            HorizontalLayout {
+        }
+        for card[card_index] in board_model.cards: Rectangle {
+            // Local flip state
+            property<bool> face_up: false;
+            // Scale down cards to 80% so they fit with top bar
+            width: (((parent.width - 30px) / 2) * 4) / 5;
+            height: (((parent.height - 100px) / 2) * 4) / 5;
+            x: card.x * 1px;
+            y: card.y * 1px;
+            background: white;
+
+            // Back face (question mark)
+            Image {
+                width: face_up ? 0px : parent.width;
+                height: parent.height;
+                source: @image-url("images/question.png");
+                animate width { duration: 300ms; easing: ease-in-out; }
+            }
+            // Front face (card image)
+            Image {
+                width: face_up ? parent.width : 0px;
+                height: parent.height;
+                source: card.image;
+                animate width {
+                    duration: 300ms;
+                    easing: ease-in-out;
+                    delay: 300ms;
+                }
+            }
+            TouchArea {
                 width: parent.width;
                 height: parent.height;
-
-                for card[index] in board_model.cards: Rectangle {
-                    width: 40px;
-                    height: 40px;
-
-                    // Card container
-                    Rectangle {
-                        width: parent.width;
-                        height: parent.height;
-
-                        // Back face (question mark)
-                        Image {
-                            x: (parent.width - self.width) / 2;
-                            width: card.is_face_up ? 0px : parent.width;
-                            height: parent.height;
-                            source: @image-url("images/question.png");
-                            visible: self.width > 0;
-
-                            animate width {
-                                duration: 300ms;
-                                easing: ease-in-out;
-                            }
-                        }
-
-                        // Front face (card image)
-                        Image {
-                            x: (parent.width - self.width) / 2;
-                            width: card.is_face_up ? parent.width : 0px;
-                            height: parent.height;
-                            source: card.image;
-                            visible: self.width > 0;
-
-                            animate width {
-                                duration: 300ms;
-                                easing: ease-in-out;
-                                delay: 300ms;  // Start after back face animation completes
-                            }
-                        }
-                    }
-
-                    TouchArea {
-                        width: parent.width;
-                        height: parent.height;
-                        clicked => {
-                            if (!card.is_face_up) {
-                                card.is_face_up = true;
-                            }
-                        }
-                    }
-                }
-
+                clicked => { face_up = !face_up; }
             }
         }
     }
