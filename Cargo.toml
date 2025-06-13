@@ -4,30 +4,26 @@ name    = "s3"
 version = "0.1.0"
 
 [[bin]]
-name = "s3"
+name = "esp32-s3-printer-mcu-demo"
 path = "./src/bin/main.rs"
 
 [dependencies]
 critical-section = "1.2.0"
-esp-alloc        = { version = "0.7.0" }
-esp-hal          = { version = "1.0.0-beta.0", features = ["esp32s3", "unstable"] }
-esp-println = { version = "0.13.1", features = [ "log", "esp32s3" ] }
-#esp-backtrace = { version = "0.15.1", features = [
-#    "panic-handler",
-#    "println",
-#] }
+esp-hal          = { version = "1.0.0-beta.1", features = ["esp32s3", "unstable"] }
 #slint = { path = "../slint/api/rs/slint", default-features = false, features = [
 #    "compat-1-2",
 #] }
-slint = { git = "https://github.com/georgik/slint.git", branch = "feature/esp-hal-1.0.0" , default-features = false, features = [
-    "compat-1-2",
-] }
+#slint = { git = "https://github.com/georgik/slint.git", branch = "feature/esp-hal-1.0.0" , default-features = false, features = [
+#    "compat-1-2",
+#] }
 
-mcu-board-support = { git = "https://github.com/georgik/slint.git", branch = "feature/esp-hal-1.0.0", features = ["esp32-s3-box-3"] }
+slint = { git = "https://github.com/slint-ui/slint.git", rev = "8131481", default-features = false, features = [ "compat-1-2" ] }
+#mcu-board-support = { git = "https://github.com/georgik/slint.git", branch = "feature/esp-hal-1.0.0", features = ["esp32-s3-box-3"] }
+mcu-board-support = { git = "https://github.com/slint-ui/slint.git", rev = "8131481", features = ["esp32-s3-box-3"] }
 log = "0.4.27"
 
 [build-dependencies]
-slint-build = { path = "../slint/api/rs/build" }
+slint-build =  { git = "https://github.com/slint-ui/slint.git", rev = "8131481" }
 
 [profile.dev]
 # Rust debug is too slow.
